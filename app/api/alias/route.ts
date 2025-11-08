@@ -20,9 +20,14 @@ async function getGmailEmail(): Promise<string> {
 }
 
 export async function POST(request: Request) {
+  let domain: string | undefined;
+  let alias: string | undefined;
+  
   try {
     const apiKey = process.env.IMPROVMX_API_KEY;
-    const { domain, alias } = await request.json();
+    const body = await request.json();
+    domain = body.domain;
+    alias = body.alias;
 
     if (!apiKey) {
       return NextResponse.json(
@@ -100,7 +105,7 @@ export async function POST(request: Request) {
     console.error('Error creating alias:', error);
     
     // If error is because alias already exists, try to fetch it
-    if (error.response?.status === 400 && error.response?.data?.errors?.alias) {
+    if (error.response?.status === 400 && error.response?.data?.errors?.alias && domain && alias) {
       try {
         const domainsResponse = await axios.get('https://api.improvmx.com/v3/domains', {
           headers: {
