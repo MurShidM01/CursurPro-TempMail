@@ -87,3 +87,10 @@ body {
     transform: translateY(0);
   }
 }
+
+/* Social Bar Ad - Responsive */
+@media (max-width: 1024px) {
+  #social-bar-ad-container {
+    display: none !important;
+  }
+}

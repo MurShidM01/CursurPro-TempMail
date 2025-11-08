@@ -13,6 +13,8 @@ interface Domain {
 
 const EXPIRATION_TIME = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 const WARNING_TIME = 2 * 60 * 60 * 1000; // 2 hours before expiration
+const SHORTLINK_URL = 'https://femalesfellowship.com/cz86y5pz86?key=1ff7a4394a0c8846047087eda4447aac';
+const SHORTLINK_COOKIE = 'shortlink_passed';
 
 // Cookie helper functions
 const setCookie = (name: string, value: string, days: number = 1) => {
@@ -50,7 +52,39 @@ export default function Home() {
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorModalMessage, setErrorModalMessage] = useState('');
 
+  // Check if user has passed through shortlink
+  const hasPassedShortlink = (): boolean => {
+    if (typeof window === 'undefined') return false;
+    
+    // Check cookie
+    const cookieValue = getCookie(SHORTLINK_COOKIE);
+    if (cookieValue === 'true') {
+      return true;
+    }
+    
+    // Check URL parameters (when returning from shortlink)
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('shortlink') === 'passed') {
+      setCookie(SHORTLINK_COOKIE, 'true', 1); // Valid for 1 day
+      // Clean URL
+      window.history.replaceState({}, '', window.location.pathname);
+      return true;
+    }
+    
+    return false;
+  };
+
   const handleGetStarted = async () => {
+    // Check if user needs to pass through shortlink
+    if (!hasPassedShortlink()) {
+      // Redirect through shortlink
+      const returnUrl = encodeURIComponent(window.location.origin + window.location.pathname + '?shortlink=passed');
+      const shortlinkWithReturn = `${SHORTLINK_URL}&return=${returnUrl}`;
+      window.location.href = shortlinkWithReturn;
+      return;
+    }
+    
+    // User has passed shortlink, proceed normally
     setShowHomePage(false);
     setLoading(true);
     await initializeApp();
@@ -393,7 +427,27 @@ export default function Home() {
     }
   };
 
-  // Load stored email on initial mount (only if not on homepage)
+  // Handle return from shortlink on page load
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('shortlink') === 'passed' && showHomePage) {
+        // User returned from shortlink, set cookie and proceed
+        setCookie(SHORTLINK_COOKIE, 'true', 1);
+        // Clean URL
+        window.history.replaceState({}, '', window.location.pathname);
+        // Automatically proceed with initialization
+        setShowHomePage(false);
+        setLoading(true);
+        // Call initializeApp after a brief delay to ensure state is updated
+        setTimeout(() => {
+          initializeApp();
+        }, 100);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     if (!showHomePage && !emailAddress && !loading) {
       const storedEmailData = loadStoredEmail();
@@ -625,6 +679,31 @@ export default function Home() {
         position: 'relative',
         overflow: 'hidden'
       }}>
+        {/* Social Bar Ad - Floating Sidebar */}
+        <div 
+          id="social-bar-ad-container"
+          style={{
+            position: 'fixed',
+            right: '20px',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            zIndex: 999,
+            width: '160px',
+            minHeight: '300px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: theme.colors.background.lavender,
+            borderRadius: theme.borderRadius['2xl'],
+            padding: theme.spacing.lg,
+            border: '1px solid rgba(139, 92, 246, 0.15)',
+            boxShadow: theme.shadows.lg,
+            transition: 'all 0.3s ease'
+          }}
+        >
+          {/* Ad will be injected here by script */}
+        </div>
+
         {/* Modern Background Pattern */}
         <div style={{
           position: 'absolute',
@@ -712,6 +791,31 @@ export default function Home() {
       position: 'relative',
       overflow: 'hidden'
     }}>
+      {/* Social Bar Ad - Floating Sidebar */}
+      <div 
+        id="social-bar-ad-container"
+        style={{
+          position: 'fixed',
+          right: '20px',
+          top: '50%',
+          transform: 'translateY(-50%)',
+          zIndex: 999,
+          width: '160px',
+          minHeight: '300px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: theme.colors.background.lavender,
+          borderRadius: theme.borderRadius['2xl'],
+          padding: theme.spacing.lg,
+          border: '1px solid rgba(139, 92, 246, 0.15)',
+          boxShadow: theme.shadows.lg,
+          transition: 'all 0.3s ease'
+        }}
+      >
+        {/* Ad will be injected here by script */}
+      </div>
+
       {/* Modern Background Pattern */}
       <div style={{
         position: 'absolute',

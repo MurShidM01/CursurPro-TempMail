@@ -42,6 +42,10 @@ export default function RootLayout({
           strategy="afterInteractive"
           data-cfasync="false"
         />
+        <Script 
+          src="//femalesfellowship.com/7c/7a/9b/7c7a9bce06cb9dcc9180220c56da9c54.js"
+          strategy="afterInteractive"
+        />
         {children}
       </body>
     </html>
