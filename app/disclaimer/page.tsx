@@ -68,7 +68,7 @@ export default function Disclaimer() {
             padding: theme.spacing.xl,
             background: `linear-gradient(135deg, ${theme.colors.warning[50]} 0%, rgba(255, 255, 255, 0.8) 100%)`,
             borderRadius: theme.borderRadius.xl,
-            border: `2px solid ${theme.colors.warning[200]}`
+            border: `2px solid ${theme.colors.warning[500]}`
           }}>
             <div style={{
               display: 'flex',
