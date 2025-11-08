@@ -1,0 +1,421 @@
+/* Main Container */
+.container {
+  min-height: 100vh;
+  background: linear-gradient(to bottom right, #eef2ff, #ffffff, #faf5ff);
+  position: relative;
+  overflow: hidden;
+}
+
+.darkContainer {
+  background: linear-gradient(to bottom right, #0a0a0a, #111827, #0a0a0a);
+}
+
+/* Animated Background Blobs */
+.blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.3;
+  animation: blob 7s infinite;
+}
+
+.blob1 {
+  top: -160px;
+  right: -160px;
+  width: 320px;
+  height: 320px;
+  background: #c084fc;
+}
+
+.blob2 {
+  bottom: -160px;
+  left: -160px;
+  width: 320px;
+  height: 320px;
+  background: #818cf8;
+}
+
+.blob3 {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 320px;
+  height: 320px;
+  background: #f472b6;
+}
+
+@keyframes blob {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(30px, -50px) scale(1.1);
+  }
+  66% {
+    transform: translate(-20px, 20px) scale(0.9);
+  }
+}
+
+.animationDelay1 {
+  animation-delay: 2s;
+}
+
+.animationDelay2 {
+  animation-delay: 4s;
+}
+
+/* Header */
+.headerContainer {
+  text-align: center;
+  margin-bottom: 64px;
+}
+
+.headerBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 12px 24px;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(12px);
+  border-radius: 9999px;
+  border: 1px solid rgba(229, 231, 235, 0.5);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  margin-bottom: 24px;
+}
+
+.darkHeaderBadge {
+  background: rgba(31, 41, 55, 0.6);
+  border-color: rgba(55, 65, 81, 0.5);
+}
+
+.headerIcon {
+  padding: 8px;
+  background: linear-gradient(to bottom right, #6366f1, #a855f7);
+  border-radius: 8px;
+}
+
+.headerTitle {
+  font-size: 3rem;
+  font-weight: 800;
+  background: linear-gradient(to right, #4f46e5, #9333ea, #ec4899);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.headerSubtitle {
+  font-size: 1.25rem;
+  color: #374151;
+  max-width: 48rem;
+  margin: 0 auto;
+  line-height: 1.75;
+  font-weight: 300;
+}
+
+.darkHeaderSubtitle {
+  color: #d1d5db;
+}
+
+/* Card */
+.card {
+  max-width: 80rem;
+  margin: 0 auto 48px;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px);
+  border-radius: 24px;
+  padding: 40px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(229, 231, 235, 0.5);
+  position: relative;
+  overflow: hidden;
+}
+
+.darkCard {
+  background: rgba(17, 24, 39, 0.8);
+  border-color: rgba(55, 65, 81, 0.5);
+}
+
+.cardBlur {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 256px;
+  height: 256px;
+  background: linear-gradient(to bottom right, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.1));
+  border-radius: 50%;
+  filter: blur(80px);
+  margin-right: -128px;
+  margin-top: -128px;
+}
+
+/* Form Elements */
+.formGroup {
+  margin-bottom: 24px;
+}
+
+.label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.darkLabel {
+  color: #d1d5db;
+}
+
+.input,
+.select {
+  width: 100%;
+  padding: 16px 20px;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.8);
+  color: #111827;
+  font-size: 1rem;
+  transition: all 0.2s;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.input:hover,
+.select:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.input:focus,
+.select:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+}
+
+.darkInput,
+.darkSelect {
+  background: rgba(31, 41, 55, 0.8);
+  border-color: #374151;
+  color: #ffffff;
+}
+
+.darkInput:focus,
+.darkSelect:focus {
+  border-color: #6366f1;
+}
+
+/* Buttons */
+.button {
+  width: 100%;
+  padding: 16px 24px;
+  background: linear-gradient(to right, #4f46e5, #9333ea, #ec4899);
+  color: white;
+  font-weight: 700;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  font-size: 1rem;
+}
+
+.button:hover:not(:disabled) {
+  background: linear-gradient(to right, #4338ca, #7e22ce, #db2777);
+  transform: scale(1.02);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.buttonSecondary {
+  padding: 10px 20px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+  background: #f3f4f6;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.buttonSecondary:hover {
+  background: #e5e7eb;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.darkButtonSecondary {
+  background: #1f2937;
+  color: #d1d5db;
+}
+
+.darkButtonSecondary:hover {
+  background: #374151;
+}
+
+/* Email Display Card */
+.emailCard {
+  background: linear-gradient(to right, #6366f1, #9333ea, #ec4899);
+  border-radius: 16px;
+  padding: 32px;
+  margin-bottom: 32px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  position: relative;
+  overflow: hidden;
+}
+
+.emailCardContent {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.emailLabel {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+}
+
+.emailAddress {
+  font-size: 2.25rem;
+  font-weight: 800;
+  color: white;
+  word-break: break-all;
+  line-height: 1.2;
+}
+
+.copyButton {
+  padding: 16px 32px;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(8px);
+  color: white;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 700;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+.copyButton:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.05);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3);
+}
+
+/* Info Box */
+.infoBox {
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 12px;
+  padding: 20px;
+  backdrop-filter: blur(4px);
+}
+
+.darkInfoBox {
+  background: rgba(99, 102, 241, 0.2);
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+.infoText {
+  font-size: 0.875rem;
+  color: #4f46e5;
+  line-height: 1.75;
+}
+
+.darkInfoText {
+  color: #a5b4fc;
+}
+
+/* Error Box */
+.errorBox {
+  margin-bottom: 24px;
+  padding: 16px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 12px;
+  color: #dc2626;
+  backdrop-filter: blur(4px);
+}
+
+.darkErrorBox {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+}
+
+/* Footer */
+.footer {
+  text-align: center;
+  margin-top: 64px;
+  margin-bottom: 32px;
+}
+
+.footerBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(12px);
+  border-radius: 9999px;
+  border: 1px solid rgba(229, 231, 235, 0.5);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.darkFooterBadge {
+  background: rgba(31, 41, 55, 0.6);
+  border-color: rgba(55, 65, 81, 0.5);
+}
+
+.footerText {
+  font-size: 0.875rem;
+  color: #4b5563;
+}
+
+.darkFooterText {
+  color: #9ca3af;
+}
+
+.footerBrand {
+  font-weight: 600;
+  background: linear-gradient(to right, #4f46e5, #9333ea);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Responsive */
+@media (min-width: 768px) {
+  .headerTitle {
+    font-size: 3.75rem;
+  }
+  
+  .emailCardContent {
+    flex-direction: row;
+    align-items: center;
+  }
+  
+  .emailAddress {
+    font-size: 2.5rem;
+  }
+}
+
