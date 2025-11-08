@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import axios from 'axios';
 import { google } from 'googleapis';
+import { deleteOldAliases } from '../cleanup/deleteOldAliases';
+import { getRandomExistingAlias } from './getRandomExisting';
 
 async function getGmailEmail(): Promise<string> {
   const oauth2Client = new google.auth.OAuth2(
@@ -22,12 +24,14 @@ async function getGmailEmail(): Promise<string> {
 export async function POST(request: Request) {
   let domain: string | undefined;
   let alias: string | undefined;
+  let excludeEmails: string[] = [];
   
   try {
     const apiKey = process.env.IMPROVMX_API_KEY;
     const body = await request.json();
     domain = body.domain;
     alias = body.alias;
+    excludeEmails = body.excludeEmails || []; // Emails already shown to user
 
     if (!apiKey) {
       return NextResponse.json(
@@ -85,22 +89,160 @@ export async function POST(request: Request) {
       );
     }
 
-    // Alias doesn't exist, create it
-    const response = await axios.post(
-      `https://api.improvmx.com/v3/domains/${domain}/aliases`,
-      { alias, forward: forwardEmail },
-      {
-        headers: {
-          ...authHeader,
-          'Content-Type': 'application/json',
-        },
-      }
-    );
+    // Alias doesn't exist, try to create it
+    try {
+      const response = await axios.post(
+        `https://api.improvmx.com/v3/domains/${domain}/aliases`,
+        { alias, forward: forwardEmail },
+        {
+          headers: {
+            ...authHeader,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
 
-    return NextResponse.json({
-      ...response.data,
-      existing: false,
-    });
+      return NextResponse.json({
+        ...response.data,
+        existing: false,
+      });
+    } catch (createError: any) {
+      // Check if error is about alias limit (handle both string and array formats)
+      const errorData = createError.response?.data;
+      let isLimitError = false;
+      
+      if (createError.response?.status === 400 && errorData?.errors?.alias) {
+        const aliasError = errorData.errors.alias;
+        // Check if it's a string or array containing "limit" or "upgrade"
+        if (typeof aliasError === 'string') {
+          isLimitError = aliasError.toLowerCase().includes('limit') || 
+                        aliasError.toLowerCase().includes('upgrade');
+        } else if (Array.isArray(aliasError) && aliasError.length > 0) {
+          const errorMessage = aliasError[0]?.toLowerCase() || '';
+          isLimitError = errorMessage.includes('limit') || 
+                        errorMessage.includes('upgrade') ||
+                        errorMessage.includes('limited to');
+        }
+      }
+      
+      // If error is about alias limit, try to cleanup old aliases first
+      if (isLimitError) {
+        console.log('Alias limit reached, attempting to cleanup old aliases...');
+        
+        try {
+          // Try to delete old aliases (older than 24 hours)
+          const cleanupResult = await deleteOldAliases(domain, 24 * 60 * 60 * 1000);
+          
+          console.log('Cleanup result:', cleanupResult);
+          
+          // If we deleted some aliases, try creating again
+          if (cleanupResult.deleted > 0) {
+            const retryResponse = await axios.post(
+              `https://api.improvmx.com/v3/domains/${domain}/aliases`,
+              { alias, forward: forwardEmail },
+              {
+                headers: {
+                  ...authHeader,
+                  'Content-Type': 'application/json',
+                },
+              }
+            );
+
+            return NextResponse.json({
+              ...retryResponse.data,
+              existing: false,
+              cleanedUp: cleanupResult.deleted,
+            });
+          } else {
+            // If cleanup didn't delete anything, try deleting more (oldest 50% if > 20 aliases)
+            console.log('No old aliases found, attempting to delete oldest aliases...');
+            const aggressiveCleanup = await deleteOldAliases(domain, 0); // 0 means delete oldest ones
+            if (aggressiveCleanup.deleted > 0) {
+              const retryResponse = await axios.post(
+                `https://api.improvmx.com/v3/domains/${domain}/aliases`,
+                { alias, forward: forwardEmail },
+                {
+                  headers: {
+                    ...authHeader,
+                    'Content-Type': 'application/json',
+                  },
+                }
+              );
+
+              return NextResponse.json({
+                ...retryResponse.data,
+                existing: false,
+                cleanedUp: aggressiveCleanup.deleted,
+              });
+            } else {
+              // Cleanup didn't work, try to return a random existing alias
+              console.log('Cleanup failed, attempting to return random existing alias...');
+              try {
+                const randomAlias = await getRandomExistingAlias(domain, excludeEmails);
+                if (randomAlias) {
+                  return NextResponse.json({
+                    alias: {
+                      alias: randomAlias.split('@')[0],
+                      forward: forwardEmail,
+                    },
+                    success: true,
+                    existing: true,
+                    reused: true, // Flag to indicate this is a reused alias
+                    email: randomAlias
+                  });
+                }
+              } catch (randomError) {
+                console.error('Error getting random existing alias:', randomError);
+              }
+            }
+          }
+        } catch (cleanupError) {
+          console.error('Error during cleanup:', cleanupError);
+          // Try to return a random existing alias as fallback
+          try {
+            const randomAlias = await getRandomExistingAlias(domain, excludeEmails);
+            if (randomAlias) {
+              return NextResponse.json({
+                alias: {
+                  alias: randomAlias.split('@')[0],
+                  forward: forwardEmail,
+                },
+                success: true,
+                existing: true,
+                reused: true,
+                email: randomAlias
+              });
+            }
+          } catch (randomError) {
+            console.error('Error getting random existing alias:', randomError);
+          }
+          // Continue to throw original error
+        }
+      } else {
+        // Not a limit error, but still try to return existing alias if available
+        // This handles cases where we can't create but have existing aliases
+        try {
+          const randomAlias = await getRandomExistingAlias(domain, excludeEmails);
+          if (randomAlias) {
+            return NextResponse.json({
+              alias: {
+                alias: randomAlias.split('@')[0],
+                forward: forwardEmail,
+              },
+              success: true,
+              existing: true,
+              reused: true,
+              email: randomAlias
+            });
+          }
+        } catch (randomError) {
+          console.error('Error getting random existing alias:', randomError);
+        }
+      }
+      
+      // Re-throw the original error if cleanup didn't help or failed
+      throw createError;
+    }
   } catch (error: any) {
     console.error('Error creating alias:', error);
     

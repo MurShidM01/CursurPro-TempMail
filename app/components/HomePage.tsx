@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { Mail, Shield, Zap, Clock, Users, TrendingUp, Globe, CheckCircle, ArrowRight, BarChart3, Sparkles, Rocket, Star } from 'lucide-react';
 import { theme } from '../theme';
+import Link from 'next/link';
+import Footer from './Footer';
 
 interface Stats {
   emailsGenerated: number;
@@ -179,14 +181,15 @@ export default function HomePage({ onGetStarted }: { onGetStarted: () => void })
 
       {/* Statistics Section */}
       <section style={{
-        padding: `${theme.spacing['6xl']} ${theme.spacing.xl}`,
-        background: theme.colors.background.rose,
+        padding: `${theme.spacing['5xl']} ${theme.spacing.xl}`,
+        background: theme.components.card.default.background,
         backdropFilter: theme.components.card.default.backdropFilter,
         borderRadius: theme.components.card.default.borderRadius,
         margin: `${theme.spacing['4xl']} auto`,
         maxWidth: '1200px',
         boxShadow: theme.components.card.default.boxShadow,
-        border: '1px solid rgba(244, 114, 182, 0.12)'
+        border: theme.components.card.default.border,
+        transition: theme.components.card.default.transition
       }}>
         <div style={{
           textAlign: 'center',
@@ -231,20 +234,22 @@ export default function HomePage({ onGetStarted }: { onGetStarted: () => void })
         }}>
           <div style={{
             padding: theme.components.card.stat.padding,
-            background: theme.colors.background.ocean,
+            background: theme.components.card.stat.background,
             borderRadius: theme.components.card.stat.borderRadius,
             boxShadow: theme.components.card.stat.boxShadow,
-            border: '1px solid rgba(20, 184, 166, 0.15)',
+            border: theme.components.card.stat.border,
             textAlign: 'center',
-            transition: theme.transitions.normal
+            transition: theme.components.card.stat.transition
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.transform = 'translateY(-4px)';
             e.currentTarget.style.boxShadow = theme.shadows.cardHover;
+            e.currentTarget.style.borderColor = 'rgba(20, 184, 166, 0.2)';
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.transform = 'translateY(0)';
             e.currentTarget.style.boxShadow = theme.components.card.stat.boxShadow;
+            e.currentTarget.style.borderColor = theme.components.card.stat.border.split(' ')[2];
           }}
           >
             <div style={{
@@ -278,29 +283,23 @@ export default function HomePage({ onGetStarted }: { onGetStarted: () => void })
           </div>
 
           <div style={{
-            padding: '36px 28px',
-            background: theme.colors.background.mint,
-            borderRadius: '24px',
+            padding: theme.components.card.stat.padding,
+            background: theme.components.card.stat.background,
+            borderRadius: theme.components.card.stat.borderRadius,
+            boxShadow: theme.components.card.stat.boxShadow,
+            border: theme.components.card.stat.border,
             textAlign: 'center',
-            boxShadow: `
-              0 8px 24px rgba(0, 0, 0, 0.06),
-              0 2px 8px rgba(0, 0, 0, 0.04),
-              inset 0 1px 0 rgba(255, 255, 255, 0.8)
-            `,
-            border: '1px solid rgba(16, 185, 129, 0.15)',
-            transition: 'all 0.3s ease'
+            transition: theme.components.card.stat.transition
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.transform = 'translateY(-4px)';
-            e.currentTarget.style.boxShadow = '0 12px 32px rgba(20, 184, 166, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.8)';
+            e.currentTarget.style.boxShadow = theme.shadows.cardHover;
+            e.currentTarget.style.borderColor = 'rgba(20, 184, 166, 0.2)';
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.transform = 'translateY(0)';
-            e.currentTarget.style.boxShadow = `
-              0 8px 24px rgba(0, 0, 0, 0.06),
-              0 2px 8px rgba(0, 0, 0, 0.04),
-              inset 0 1px 0 rgba(255, 255, 255, 0.8)
-            `;
+            e.currentTarget.style.boxShadow = theme.components.card.stat.boxShadow;
+            e.currentTarget.style.borderColor = theme.components.card.stat.border.split(' ')[2];
           }}
           >
             <div style={{
@@ -334,29 +333,23 @@ export default function HomePage({ onGetStarted }: { onGetStarted: () => void })
           </div>
 
           <div style={{
-            padding: '36px 28px',
-            background: theme.colors.background.lavender,
-            borderRadius: '24px',
+            padding: theme.components.card.stat.padding,
+            background: theme.components.card.stat.background,
+            borderRadius: theme.components.card.stat.borderRadius,
+            boxShadow: theme.components.card.stat.boxShadow,
+            border: theme.components.card.stat.border,
             textAlign: 'center',
-            boxShadow: `
-              0 8px 24px rgba(0, 0, 0, 0.06),
-              0 2px 8px rgba(0, 0, 0, 0.04),
-              inset 0 1px 0 rgba(255, 255, 255, 0.8)
-            `,
-            border: '1px solid rgba(139, 92, 246, 0.12)',
-            transition: 'all 0.3s ease'
+            transition: theme.components.card.stat.transition
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.transform = 'translateY(-4px)';
-            e.currentTarget.style.boxShadow = '0 12px 32px rgba(20, 184, 166, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.8)';
+            e.currentTarget.style.boxShadow = theme.shadows.cardHover;
+            e.currentTarget.style.borderColor = 'rgba(20, 184, 166, 0.2)';
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.transform = 'translateY(0)';
-            e.currentTarget.style.boxShadow = `
-              0 8px 24px rgba(0, 0, 0, 0.06),
-              0 2px 8px rgba(0, 0, 0, 0.04),
-              inset 0 1px 0 rgba(255, 255, 255, 0.8)
-            `;
+            e.currentTarget.style.boxShadow = theme.components.card.stat.boxShadow;
+            e.currentTarget.style.borderColor = theme.components.card.stat.border.split(' ')[2];
           }}
           >
             <div style={{
@@ -390,29 +383,23 @@ export default function HomePage({ onGetStarted }: { onGetStarted: () => void })
           </div>
 
           <div style={{
-            padding: '36px 28px',
-            background: theme.colors.background.sand,
-            borderRadius: '24px',
+            padding: theme.components.card.stat.padding,
+            background: theme.components.card.stat.background,
+            borderRadius: theme.components.card.stat.borderRadius,
+            boxShadow: theme.components.card.stat.boxShadow,
+            border: theme.components.card.stat.border,
             textAlign: 'center',
-            boxShadow: `
-              0 8px 24px rgba(0, 0, 0, 0.06),
-              0 2px 8px rgba(0, 0, 0, 0.04),
-              inset 0 1px 0 rgba(255, 255, 255, 0.8)
-            `,
-            border: '1px solid rgba(245, 158, 11, 0.12)',
-            transition: 'all 0.3s ease'
+            transition: theme.components.card.stat.transition
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.transform = 'translateY(-4px)';
-            e.currentTarget.style.boxShadow = '0 12px 32px rgba(20, 184, 166, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.8)';
+            e.currentTarget.style.boxShadow = theme.shadows.cardHover;
+            e.currentTarget.style.borderColor = 'rgba(20, 184, 166, 0.2)';
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.transform = 'translateY(0)';
-            e.currentTarget.style.boxShadow = `
-              0 8px 24px rgba(0, 0, 0, 0.06),
-              0 2px 8px rgba(0, 0, 0, 0.04),
-              inset 0 1px 0 rgba(255, 255, 255, 0.8)
-            `;
+            e.currentTarget.style.boxShadow = theme.components.card.stat.boxShadow;
+            e.currentTarget.style.borderColor = theme.components.card.stat.border.split(' ')[2];
           }}
           >
             <div style={{
@@ -447,26 +434,6 @@ export default function HomePage({ onGetStarted }: { onGetStarted: () => void })
         </div>
       </section>
 
-      {/* Ad Container - Between Sections */}
-      <div style={{
-        maxWidth: '1200px',
-        margin: '60px auto',
-        padding: '0 20px'
-      }}>
-        <div style={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          minHeight: '100px',
-          background: theme.colors.background.mint,
-          borderRadius: theme.borderRadius['2xl'],
-          padding: theme.spacing['2xl'],
-          border: '1px solid rgba(16, 185, 129, 0.15)',
-          boxShadow: theme.shadows.sm
-        }}>
-          <div id="container-b1295c45d307f3c8f0be77f72ef3e22d"></div>
-        </div>
-      </div>
 
       {/* About Section */}
       <section style={{
@@ -639,6 +606,8 @@ export default function HomePage({ onGetStarted }: { onGetStarted: () => void })
           </div>
         </div>
       </section>
+
+      <Footer />
     </div>
   );
 }

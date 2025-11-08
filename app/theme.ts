@@ -177,38 +177,36 @@ export const theme = {
     full: '50px',
   },
 
-  // Shadows
+  // Shadows - Enhanced with modern depth
   shadows: {
-    sm: '0 2px 8px rgba(0, 0, 0, 0.06)',
-    md: '0 4px 12px rgba(0, 0, 0, 0.08)',
-    lg: '0 8px 24px rgba(0, 0, 0, 0.08)',
-    xl: '0 12px 32px rgba(0, 0, 0, 0.1)',
-    '2xl': '0 16px 40px rgba(0, 0, 0, 0.12)',
-    '3xl': '0 20px 60px rgba(0, 0, 0, 0.15)',
-    '4xl': '0 32px 96px rgba(0, 0, 0, 0.08)',
-    primary: '0 12px 36px rgba(20, 184, 166, 0.4)',
-    primaryHover: '0 16px 48px rgba(20, 184, 166, 0.5)',
+    sm: '0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.06)',
+    md: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
+    lg: '0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04)',
+    xl: '0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 10px 10px -5px rgba(0, 0, 0, 0.02)',
+    '2xl': '0 25px 50px -12px rgba(0, 0, 0, 0.12)',
+    '3xl': '0 35px 60px -12px rgba(0, 0, 0, 0.15)',
+    '4xl': '0 50px 100px -20px rgba(0, 0, 0, 0.1)',
+    primary: '0 10px 40px -10px rgba(20, 184, 166, 0.4), 0 0 0 1px rgba(20, 184, 166, 0.1)',
+    primaryHover: '0 20px 50px -10px rgba(20, 184, 166, 0.5), 0 0 0 1px rgba(20, 184, 166, 0.15)',
     card: `
-      0 32px 96px rgba(0, 0, 0, 0.08),
-      0 8px 24px rgba(0, 0, 0, 0.04),
-      0 0 0 1px rgba(255, 255, 255, 0.6),
-      inset 0 1px 0 rgba(255, 255, 255, 0.8),
-      inset 0 -1px 0 rgba(0, 0, 0, 0.02)
+      0 20px 60px -15px rgba(0, 0, 0, 0.1),
+      0 0 0 1px rgba(20, 184, 166, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.9)
     `,
-    cardHover: '0 12px 32px rgba(20, 184, 166, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.8)',
+    cardHover: `
+      0 25px 70px -15px rgba(20, 184, 166, 0.2),
+      0 0 0 1px rgba(20, 184, 166, 0.12),
+      inset 0 1px 0 rgba(255, 255, 255, 0.95)
+    `,
     gradient: `
-      0 32px 72px rgba(20, 184, 166, 0.35),
-      0 8px 24px rgba(16, 185, 129, 0.25),
-      0 0 0 1px rgba(255, 255, 255, 0.2),
-      inset 0 1px 0 rgba(255, 255, 255, 0.3),
-      inset 0 -1px 0 rgba(0, 0, 0, 0.1)
+      0 25px 60px -10px rgba(20, 184, 166, 0.4),
+      0 0 0 1px rgba(255, 255, 255, 0.15),
+      inset 0 1px 0 rgba(255, 255, 255, 0.4)
     `,
     warning: `
-      0 16px 40px rgba(245, 158, 11, 0.3),
-      0 4px 12px rgba(234, 88, 12, 0.2),
-      0 0 0 1px rgba(255, 255, 255, 0.25),
-      inset 0 1px 0 rgba(255, 255, 255, 0.35),
-      inset 0 -1px 0 rgba(0, 0, 0, 0.1)
+      0 20px 50px -10px rgba(245, 158, 11, 0.3),
+      0 0 0 1px rgba(245, 158, 11, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.4)
     `,
   },
 
@@ -228,91 +226,92 @@ export const theme = {
 
   // Component Styles
   components: {
-    // Button Styles
+    // Button Styles - Enhanced
     button: {
       primary: {
-        padding: '18px 40px',
-        fontSize: '1.125rem',
+        padding: '16px 36px',
+        fontSize: '1rem',
         fontWeight: 600,
         color: 'white',
         background: 'linear-gradient(135deg, #14b8a6 0%, #10b981 50%, #0ea5e9 100%)',
-        borderRadius: '16px',
-        boxShadow: '0 12px 36px rgba(20, 184, 166, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+        borderRadius: '14px',
+        boxShadow: '0 10px 30px -10px rgba(20, 184, 166, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.25)',
         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
         border: 'none',
+        cursor: 'pointer',
       },
       secondary: {
-        padding: '14px 28px',
+        padding: '12px 24px',
         fontSize: '0.875rem',
         fontWeight: 600,
         color: '#14b8a6',
-        background: 'linear-gradient(135deg, rgba(20, 184, 166, 0.1) 0%, rgba(16, 185, 129, 0.08) 100%)',
-        border: '2px solid rgba(20, 184, 166, 0.2)',
-        borderRadius: '14px',
-        boxShadow: '0 2px 8px rgba(20, 184, 166, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.6)',
+        background: 'rgba(255, 255, 255, 0.9)',
+        border: '1.5px solid rgba(20, 184, 166, 0.2)',
+        borderRadius: '12px',
+        boxShadow: '0 2px 8px rgba(20, 184, 166, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.8)',
         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        cursor: 'pointer',
       },
       white: {
-        padding: '16px 32px',
+        padding: '14px 28px',
         background: 'rgba(255, 255, 255, 0.98)',
         color: '#14b8a6',
-        borderRadius: '14px',
-        boxShadow: '0 6px 20px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.8)',
+        borderRadius: '12px',
+        boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.9)',
         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
         border: 'none',
+        cursor: 'pointer',
       },
     },
-    // Card Styles
+    // Card Styles - Enhanced
     card: {
       default: {
-        background: 'rgba(240, 253, 250, 0.98)', // Ocean theme
-        backdropFilter: 'blur(32px) saturate(180%)',
-        borderRadius: '36px',
-        padding: '52px',
+        background: 'rgba(255, 255, 255, 0.95)',
+        backdropFilter: 'blur(20px) saturate(180%)',
+        borderRadius: '24px',
+        padding: '40px',
         boxShadow: `
-          0 32px 96px rgba(0, 0, 0, 0.08),
-          0 8px 24px rgba(0, 0, 0, 0.04),
-          0 0 0 1px rgba(20, 184, 166, 0.1),
-          inset 0 1px 0 rgba(255, 255, 255, 0.8),
-          inset 0 -1px 0 rgba(0, 0, 0, 0.02)
+          0 20px 60px -15px rgba(0, 0, 0, 0.1),
+          0 0 0 1px rgba(20, 184, 166, 0.08),
+          inset 0 1px 0 rgba(255, 255, 255, 0.9)
         `,
-        border: '1px solid rgba(20, 184, 166, 0.15)',
-        transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+        border: '1px solid rgba(20, 184, 166, 0.1)',
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
       },
       gradient: {
         background: 'linear-gradient(135deg, #14b8a6 0%, #10b981 50%, #0ea5e9 100%)',
-        borderRadius: '32px',
-        padding: '44px',
+        borderRadius: '20px',
+        padding: '36px',
         boxShadow: `
-          0 32px 72px rgba(20, 184, 166, 0.35),
-          0 8px 24px rgba(16, 185, 129, 0.25),
-          0 0 0 1px rgba(255, 255, 255, 0.2),
-          inset 0 1px 0 rgba(255, 255, 255, 0.3),
-          inset 0 -1px 0 rgba(0, 0, 0, 0.1)
+          0 25px 60px -10px rgba(20, 184, 166, 0.4),
+          0 0 0 1px rgba(255, 255, 255, 0.15),
+          inset 0 1px 0 rgba(255, 255, 255, 0.4)
         `,
       },
       stat: {
-        padding: '36px 28px',
-        background: 'rgba(240, 249, 255, 0.98)', // Sky theme
-        borderRadius: '24px',
+        padding: '32px 24px',
+        background: 'rgba(255, 255, 255, 0.9)',
+        borderRadius: '20px',
         boxShadow: `
-          0 8px 24px rgba(0, 0, 0, 0.06),
-          0 2px 8px rgba(0, 0, 0, 0.04),
-          inset 0 1px 0 rgba(255, 255, 255, 0.8)
+          0 10px 30px -10px rgba(0, 0, 0, 0.08),
+          0 0 0 1px rgba(14, 165, 233, 0.1),
+          inset 0 1px 0 rgba(255, 255, 255, 0.9)
         `,
-        border: '1px solid rgba(14, 165, 233, 0.12)',
+        border: '1px solid rgba(14, 165, 233, 0.1)',
+        transition: 'all 0.3s ease',
       },
       feature: {
-        padding: '44px 36px',
-        background: 'rgba(236, 253, 245, 0.98)', // Mint theme
-        backdropFilter: 'blur(32px) saturate(180%)',
-        borderRadius: '28px',
+        padding: '36px 28px',
+        background: 'rgba(255, 255, 255, 0.9)',
+        backdropFilter: 'blur(20px) saturate(180%)',
+        borderRadius: '20px',
         boxShadow: `
-          0 12px 32px rgba(0, 0, 0, 0.06),
-          0 4px 12px rgba(0, 0, 0, 0.04),
-          inset 0 1px 0 rgba(255, 255, 255, 0.8)
+          0 10px 30px -10px rgba(0, 0, 0, 0.08),
+          0 0 0 1px rgba(16, 185, 129, 0.1),
+          inset 0 1px 0 rgba(255, 255, 255, 0.9)
         `,
-        border: '1px solid rgba(16, 185, 129, 0.12)',
+        border: '1px solid rgba(16, 185, 129, 0.1)',
+        transition: 'all 0.3s ease',
       },
     },
     // Icon Container Styles

@@ -1,10 +1,16 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Mail, Copy, RefreshCw, Check, Shield, Zap, Clock, AlertTriangle, X, Wifi, WifiOff } from 'lucide-react';
+import { Mail, Shield, Zap, Clock, AlertTriangle, X, WifiOff, RefreshCw, Globe, ArrowRight } from 'lucide-react';
+import Link from 'next/link';
 import EmailInbox from './components/EmailInbox';
 import HomePage from './components/HomePage';
+import EmailDisplay from './components/EmailDisplay';
+import Footer from './components/Footer';
 import { theme } from './theme';
+import { loadStoredEmail, saveEmail, clearStoredEmail } from './utils/emailStorage';
+import { deleteCookie } from './utils/cookies';
+import { getShownAliases, markAliasAsShown } from './utils/aliasTracking';
 
 interface Domain {
   domain: string;
@@ -13,30 +19,6 @@ interface Domain {
 
 const EXPIRATION_TIME = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 const WARNING_TIME = 2 * 60 * 60 * 1000; // 2 hours before expiration
-const SHORTLINK_URL = 'https://femalesfellowship.com/cz86y5pz86?key=1ff7a4394a0c8846047087eda4447aac';
-const SHORTLINK_COOKIE = 'shortlink_passed';
-
-// Cookie helper functions
-const setCookie = (name: string, value: string, days: number = 1) => {
-  const expires = new Date();
-  expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
-  document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/`;
-};
-
-const getCookie = (name: string): string | null => {
-  const nameEQ = name + '=';
-  const ca = document.cookie.split(';');
-  for (let i = 0; i < ca.length; i++) {
-    let c = ca[i];
-    while (c.charAt(0) === ' ') c = c.substring(1, c.length);
-    if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
-  }
-  return null;
-};
-
-const deleteCookie = (name: string) => {
-  document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;`;
-};
 
 export default function Home() {
   const [showHomePage, setShowHomePage] = useState(true);
@@ -52,39 +34,7 @@ export default function Home() {
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorModalMessage, setErrorModalMessage] = useState('');
 
-  // Check if user has passed through shortlink
-  const hasPassedShortlink = (): boolean => {
-    if (typeof window === 'undefined') return false;
-    
-    // Check cookie
-    const cookieValue = getCookie(SHORTLINK_COOKIE);
-    if (cookieValue === 'true') {
-      return true;
-    }
-    
-    // Check URL parameters (when returning from shortlink)
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('shortlink') === 'passed') {
-      setCookie(SHORTLINK_COOKIE, 'true', 1); // Valid for 1 day
-      // Clean URL
-      window.history.replaceState({}, '', window.location.pathname);
-      return true;
-    }
-    
-    return false;
-  };
-
   const handleGetStarted = async () => {
-    // Check if user needs to pass through shortlink
-    if (!hasPassedShortlink()) {
-      // Redirect through shortlink
-      const returnUrl = encodeURIComponent(window.location.origin + window.location.pathname + '?shortlink=passed');
-      const shortlinkWithReturn = `${SHORTLINK_URL}&return=${returnUrl}`;
-      window.location.href = shortlinkWithReturn;
-      return;
-    }
-    
-    // User has passed shortlink, proceed normally
     setShowHomePage(false);
     setLoading(true);
     await initializeApp();
@@ -95,8 +45,7 @@ export default function Home() {
     setEmailAddress('');
     setTimeRemaining(null);
     setShowExpirationWarning(false);
-    localStorage.removeItem('tempEmail');
-    deleteCookie('tempEmail');
+    clearStoredEmail();
     // Optionally show a message or redirect
     setError('Your temporary email has expired. Please generate a new one.');
   }, []);
@@ -136,53 +85,6 @@ export default function Home() {
     return () => clearInterval(interval);
   }, [handleEmailExpiration]);
 
-  const loadStoredEmail = (): { email: string; createdAt: number; expiresAt: number } | null => {
-    try {
-      // Try localStorage first
-      const stored = localStorage.getItem('tempEmail');
-      if (stored) {
-        const emailData = JSON.parse(stored);
-        const now = Date.now();
-        if (emailData.expiresAt && emailData.expiresAt > now && emailData.email) {
-          return emailData;
-        } else {
-          // Email expired, remove it
-          localStorage.removeItem('tempEmail');
-          deleteCookie('tempEmail');
-        }
-      }
-      
-      // Try cookie as backup
-      const cookieData = getCookie('tempEmail');
-      if (cookieData) {
-        try {
-          const emailData = JSON.parse(decodeURIComponent(cookieData));
-          const now = Date.now();
-          if (emailData.expiresAt && emailData.expiresAt > now && emailData.email) {
-            // Restore to localStorage
-            localStorage.setItem('tempEmail', JSON.stringify(emailData));
-            return emailData;
-          } else {
-            deleteCookie('tempEmail');
-          }
-        } catch (e) {
-          console.error('Error parsing cookie email:', e);
-          deleteCookie('tempEmail');
-        }
-      }
-    } catch (e) {
-      console.error('Error loading stored email:', e);
-    }
-    return null;
-  };
-
-  const saveEmail = (email: string, createdAt: number, expiresAt: number) => {
-    const emailData = { email, createdAt, expiresAt };
-    // Save to localStorage
-    localStorage.setItem('tempEmail', JSON.stringify(emailData));
-    // Save to cookie as backup (expires in 1 day)
-    setCookie('tempEmail', encodeURIComponent(JSON.stringify(emailData)), 1);
-  };
 
   const initializeApp = async () => {
     setLoading(true);
@@ -193,6 +95,8 @@ export default function Home() {
       if (storedEmailData) {
         // Email is still valid, use it
         setEmailAddress(storedEmailData.email);
+        // Mark this email as shown to the user
+        markAliasAsShown(storedEmailData.email);
         const [alias, domain] = storedEmailData.email.split('@');
         if (domain) {
           setSelectedDomain(domain);
@@ -354,6 +258,9 @@ export default function Home() {
 
     const alias = generateRandomAlias();
 
+    // Get list of aliases already shown to user
+    const shownAliases = getShownAliases();
+
     try {
       const response = await fetch('/api/alias', {
         method: 'POST',
@@ -363,14 +270,44 @@ export default function Home() {
         body: JSON.stringify({
           domain: targetDomain,
           alias: alias,
+          excludeEmails: shownAliases, // Send list of already shown emails
         }),
       });
 
-      const data = await response.json();
+      // Try to parse JSON response, handle empty or malformed responses
+      let data: any = {};
+      let responseText = '';
+      try {
+        responseText = await response.text();
+        if (responseText && responseText.trim()) {
+          try {
+            data = JSON.parse(responseText);
+          } catch (parseError) {
+            console.warn('Failed to parse response as JSON. Response text:', responseText.substring(0, 200));
+            // If it's not JSON, store the text as the error message
+            data = { error: responseText.substring(0, 200) };
+          }
+        }
+      } catch (textError) {
+        console.warn('Failed to read response text:', textError);
+      }
 
       if (response.ok) {
-        const fullEmail = `${alias}@${targetDomain}`;
+        // Check if this is a reused existing alias
+        let fullEmail: string;
+        if (data.email) {
+          // API returned a reused alias
+          fullEmail = data.email;
+        } else {
+          // Newly created alias
+          fullEmail = `${alias}@${targetDomain}`;
+        }
+        
         setEmailAddress(fullEmail);
+        
+        // Mark this alias as shown to the user
+        markAliasAsShown(fullEmail);
+        
         // Store creation time in localStorage and cookies
         const createdAt = Date.now();
         const expiresAt = Date.now() + EXPIRATION_TIME;
@@ -378,37 +315,103 @@ export default function Home() {
         setLoading(false);
         setGenerating(false);
       } else {
-        // Technical error logged to console
-        console.error('API Error Response:', {
-          status: response.status,
-          data: data,
-          error: data.error
-        });
+        // Extract error message properly (handle nested error structures)
+        let errorMessage: string = 'Unknown error';
         
-        // User-friendly error message
+        // Check for nested error structure (e.g., data.error.alias array)
+        if (data?.error?.alias && Array.isArray(data.error.alias) && data.error.alias.length > 0) {
+          errorMessage = data.error.alias[0];
+        } else if (data?.error?.alias && typeof data.error.alias === 'string') {
+          errorMessage = data.error.alias;
+        } else if (data?.error && typeof data.error === 'string') {
+          errorMessage = data.error;
+        } else if (data?.error?.message) {
+          errorMessage = data.error.message;
+        } else if (data?.message) {
+          errorMessage = data.message;
+        } else if (data?.errors) {
+          // Handle errors object
+          if (typeof data.errors === 'string') {
+            errorMessage = data.errors;
+          } else if (Array.isArray(data.errors)) {
+            errorMessage = data.errors[0] || 'Unknown error';
+          } else if (data.errors.alias && Array.isArray(data.errors.alias)) {
+            errorMessage = data.errors.alias[0];
+          }
+        } else if (response.statusText) {
+          errorMessage = response.statusText;
+        }
+        
+        // Safely extract headers
+        let headersObj: Record<string, string> = {};
+        try {
+          response.headers.forEach((value, key) => {
+            headersObj[key] = value;
+          });
+        } catch (e) {
+          // Headers might not be accessible
+        }
+        
+        const errorDetails = {
+          status: response.status,
+          statusText: response.statusText,
+          url: response.url || '/api/alias',
+          headers: headersObj,
+          responseText: responseText ? responseText.substring(0, 500) : '(empty response)',
+          parsedData: data,
+          error: errorMessage,
+          domain: targetDomain,
+          alias: alias,
+          timestamp: new Date().toISOString()
+        };
+        
+        // Log error details for debugging
+        console.error('API Error Response:', JSON.stringify(errorDetails, null, 2));
+        
+        // Check if error is about upgrade/limit
+        const isUpgradeError = errorMessage.toLowerCase().includes('upgrade') || 
+                               errorMessage.toLowerCase().includes('limit') ||
+                               errorMessage.toLowerCase().includes('limited to');
+        
+        // User-friendly error message based on status code and error type
         if (response.status === 0 || !navigator.onLine) {
           showUserFriendlyError('Please check your internet connection and try again.');
+        } else if (isUpgradeError) {
+          // Show user-friendly message for upgrade/limit errors
+          showUserFriendlyError('Service is temporarily unavailable right now. Please try again later!');
+        } else if (response.status === 400) {
+          // Bad request - show generic error for other 400 errors
+          showUserFriendlyError('Unable to generate email address. Please try again.');
+        } else if (response.status === 401 || response.status === 403) {
+          showUserFriendlyError('Authentication error. Please refresh the page and try again.');
         } else if (response.status >= 500) {
           showUserFriendlyError('Our servers are temporarily unavailable. Please try again in a few moments.');
         } else {
-          showUserFriendlyError('Unable to generate email address. Please check your internet connection and try again.');
+          showUserFriendlyError('Service is temporarily unavailable. Please try again later.');
         }
         setLoading(false);
         setGenerating(false);
       }
     } catch (error: any) {
-      // Technical error logged to console
-      console.error('Error creating email:', {
-        message: error.message,
-        stack: error.stack,
-        name: error.name
-      });
+      // Technical error logged to console with full details
+      const errorDetails = {
+        message: error?.message || 'Unknown error',
+        stack: error?.stack,
+        name: error?.name,
+        domain: targetDomain,
+        alias: alias
+      };
+      console.error('Error creating email:', errorDetails);
       
       // User-friendly error message
-      if (!navigator.onLine || error.message?.includes('fetch')) {
-        showUserFriendlyError('Please check your internet connection and try again.');
+      if (!navigator.onLine) {
+        showUserFriendlyError('No internet connection. Please check your connection and try again.');
+      } else if (error?.message?.includes('fetch') || error?.message?.includes('network')) {
+        showUserFriendlyError('Network error. Please check your internet connection and try again.');
+      } else if (error?.message?.includes('Failed to fetch')) {
+        showUserFriendlyError('Unable to reach our servers. Please check your internet connection and try again.');
       } else {
-        showUserFriendlyError('Unable to generate email address. Please check your internet connection and try again.');
+        showUserFriendlyError('An unexpected error occurred. Please try again.');
       }
       setLoading(false);
       setGenerating(false);
@@ -427,26 +430,6 @@ export default function Home() {
     }
   };
 
-  // Handle return from shortlink on page load
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.get('shortlink') === 'passed' && showHomePage) {
-        // User returned from shortlink, set cookie and proceed
-        setCookie(SHORTLINK_COOKIE, 'true', 1);
-        // Clean URL
-        window.history.replaceState({}, '', window.location.pathname);
-        // Automatically proceed with initialization
-        setShowHomePage(false);
-        setLoading(true);
-        // Call initializeApp after a brief delay to ensure state is updated
-        setTimeout(() => {
-          initializeApp();
-        }, 100);
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   useEffect(() => {
     if (!showHomePage && !emailAddress && !loading) {
@@ -454,6 +437,8 @@ export default function Home() {
       if (storedEmailData) {
         // Email exists and is valid, use it
         setEmailAddress(storedEmailData.email);
+        // Mark this email as shown to the user
+        markAliasAsShown(storedEmailData.email);
         const [alias, domain] = storedEmailData.email.split('@');
         if (domain) {
           setSelectedDomain(domain);
@@ -630,11 +615,11 @@ export default function Home() {
         position: 'relative',
         zIndex: 1
       }}>
-        <p style={{
+      <p style={{
           fontSize: '24px',
           fontWeight: 700,
-          color: 'white',
-          margin: 0,
+        color: 'white',
+        margin: 0,
           marginBottom: '8px',
           letterSpacing: '-0.02em'
         }}>Creating Your Email</p>
@@ -679,30 +664,6 @@ export default function Home() {
         position: 'relative',
         overflow: 'hidden'
       }}>
-        {/* Social Bar Ad - Floating Sidebar */}
-        <div 
-          id="social-bar-ad-container"
-          style={{
-            position: 'fixed',
-            right: '20px',
-            top: '50%',
-            transform: 'translateY(-50%)',
-            zIndex: 999,
-            width: '160px',
-            minHeight: '300px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: theme.colors.background.lavender,
-            borderRadius: theme.borderRadius['2xl'],
-            padding: theme.spacing.lg,
-            border: '1px solid rgba(139, 92, 246, 0.15)',
-            boxShadow: theme.shadows.lg,
-            transition: 'all 0.3s ease'
-          }}
-        >
-          {/* Ad will be injected here by script */}
-        </div>
 
         {/* Modern Background Pattern */}
         <div style={{
@@ -785,36 +746,13 @@ export default function Home() {
   }
 
   return (
+    <>
     <div style={{
       minHeight: '100vh',
       background: theme.gradients.background,
       position: 'relative',
       overflow: 'hidden'
     }}>
-      {/* Social Bar Ad - Floating Sidebar */}
-      <div 
-        id="social-bar-ad-container"
-        style={{
-          position: 'fixed',
-          right: '20px',
-          top: '50%',
-          transform: 'translateY(-50%)',
-          zIndex: 999,
-          width: '160px',
-          minHeight: '300px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          background: theme.colors.background.lavender,
-          borderRadius: theme.borderRadius['2xl'],
-          padding: theme.spacing.lg,
-          border: '1px solid rgba(139, 92, 246, 0.15)',
-          boxShadow: theme.shadows.lg,
-          transition: 'all 0.3s ease'
-        }}
-      >
-        {/* Ad will be injected here by script */}
-      </div>
 
       {/* Modern Background Pattern */}
       <div style={{
@@ -984,7 +922,7 @@ export default function Home() {
               }}>Configuration Error</h3>
             </div>
             <p style={{ margin: 0, lineHeight: theme.typography.lineHeight.relaxed }}>
-              {error}
+              {typeof error === 'string' ? error : 'An error occurred. Please try again.'}
             </p>
             <div style={{
               marginTop: theme.spacing.lg,
@@ -1008,333 +946,32 @@ export default function Home() {
 
         {/* Email Address Card */}
         {emailAddress && (
-          <div style={{
-            maxWidth: '900px',
-            width: '100%',
-            margin: `0 auto ${theme.spacing['4xl']}`,
-            background: theme.components.card.default.background,
-            backdropFilter: theme.components.card.default.backdropFilter,
-            borderRadius: theme.components.card.default.borderRadius,
-            padding: theme.components.card.default.padding,
-            boxShadow: theme.components.card.default.boxShadow,
-            border: theme.components.card.default.border,
-            transition: theme.components.card.default.transition,
-            boxSizing: 'border-box'
-          }}>
-            {/* Header Section */}
+          <>
+            <EmailDisplay
+              emailAddress={emailAddress}
+              timeRemaining={timeRemaining}
+              copied={copied}
+              generating={generating}
+              onCopy={copyEmail}
+              onGenerateNew={generateNewEmail}
+              getProgressBarColor={getProgressBarColor}
+              formatTimeRemaining={formatTimeRemaining}
+              EXPIRATION_TIME={EXPIRATION_TIME}
+            />
+
+
+            {/* Features */}
             <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: '32px',
-              flexWrap: 'wrap',
-              gap: '20px'
-            }}>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '16px'
-              }}>
-                <div style={{
-                  width: theme.components.icon.large.width,
-                  height: theme.components.icon.large.height,
-                  borderRadius: theme.components.icon.large.borderRadius,
-                  background: theme.components.icon.large.background,
-                  boxShadow: theme.components.icon.large.boxShadow,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  <Mail size={26} color="white" />
-                </div>
-                <div>
-                  <h2 style={{
-                    fontSize: '1.75rem',
-                    fontWeight: 700,
-                    color: '#1a202c',
-                    margin: 0,
-                    letterSpacing: '-0.02em'
-                  }}>Your Temporary Email</h2>
-                  <p style={{
-                    fontSize: '0.875rem',
-                    color: '#718096',
-                    margin: '6px 0 0 0',
-                    fontWeight: 400
-                  }}>Ready to receive emails instantly</p>
-                </div>
-              </div>
-                  <button
-                onClick={generateNewEmail}
-                disabled={generating}
-                style={{
-                  padding: theme.components.button.secondary.padding,
-                  fontSize: theme.components.button.secondary.fontSize,
-                  fontWeight: theme.components.button.secondary.fontWeight,
-                  color: theme.components.button.secondary.color,
-                  background: theme.components.button.secondary.background,
-                  border: theme.components.button.secondary.border,
-                  borderRadius: theme.components.button.secondary.borderRadius,
-                  boxShadow: theme.components.button.secondary.boxShadow,
-                  transition: theme.components.button.secondary.transition,
-                  cursor: generating ? 'not-allowed' : 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                  opacity: generating ? 0.6 : 1,
-                  fontFamily: theme.typography.fontFamily.primary
-                }}
-                  onMouseEnter={(e) => {
-                  if (!generating) {
-                    e.currentTarget.style.background = theme.gradients.cardHover;
-                    e.currentTarget.style.borderColor = 'rgba(20, 184, 166, 0.3)';
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.boxShadow = theme.shadows.cardHover;
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!generating) {
-                    e.currentTarget.style.background = theme.components.button.secondary.background;
-                    e.currentTarget.style.borderColor = theme.components.button.secondary.border;
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = theme.components.button.secondary.boxShadow;
-                  }
-                }}
-              >
-                {generating ? (
-                  <>
-                    <RefreshCw size={18} style={{ animation: 'spin 1s linear infinite' }} />
-                    <span>Generating...</span>
-                  </>
-                ) : (
-                  <>
-                    <RefreshCw size={18} />
-                    <span>Generate New</span>
-                  </>
-                )}
-              </button>
-            </div>
-
-
-            {/* Email Display Card */}
-            <div style={{
-              background: theme.components.card.gradient.background,
-              borderRadius: theme.components.card.gradient.borderRadius,
-              padding: theme.components.card.gradient.padding,
-              boxShadow: theme.components.card.gradient.boxShadow,
-              marginBottom: theme.spacing['4xl'],
-              position: 'relative',
-              overflow: 'hidden'
-            }}>
-              <div style={{
-                position: 'absolute',
-                top: '-50%',
-                right: '-50%',
-                width: '200%',
-                height: '200%',
-                background: 'radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%)',
-                pointerEvents: 'none'
-              }}></div>
-              
-              <div style={{
-                position: 'relative',
-                zIndex: 1
-              }}>
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: '20px',
-                  flexWrap: 'wrap'
-                }}>
-                  <div style={{ flex: '1 1 auto', minWidth: '250px' }}>
-                    <p style={{
-                      fontSize: '0.8125rem',
-                      fontWeight: 600,
-                      color: 'rgba(255, 255, 255, 0.9)',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.1em',
-                      marginBottom: '12px',
-                      margin: 0
-                    }}>Your Email Address</p>
-                    <p style={{
-                      fontSize: '1.75rem',
-                      fontWeight: 700,
-                      color: 'white',
-                      wordBreak: 'break-all',
-                      lineHeight: 1.4,
-                      margin: 0,
-                      letterSpacing: '-0.01em'
-                    }}>
-                      {emailAddress}
-                    </p>
-
-                    {/* Compact Countdown Timer with Dynamic Colors */}
-                    {timeRemaining !== null && timeRemaining > 0 && (() => {
-                      const colorScheme = getProgressBarColor(timeRemaining);
-                      return (
-                        <div style={{
-                          marginTop: '16px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '10px'
-                        }}>
-                          <Clock 
-                            size={14} 
-                            color="rgba(255, 255, 255, 0.9)" 
-                            style={{ flexShrink: 0 }}
-                          />
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            {/* Progress Bar */}
-                            <div style={{
-                              position: 'relative',
-                              width: '100%',
-                              height: '6px',
-                              background: 'rgba(255, 255, 255, 0.15)',
-                              borderRadius: '3px',
-                              overflow: 'hidden',
-                              marginBottom: '4px'
-                            }}>
-                              <div style={{
-                                position: 'absolute',
-                                left: 0,
-                                top: 0,
-                                height: '100%',
-                                width: `${(timeRemaining / EXPIRATION_TIME) * 100}%`,
-                                background: colorScheme.gradient,
-                                borderRadius: '3px',
-                                transition: 'width 1s linear, background 2s ease',
-                                boxShadow: colorScheme.glow
-                              }}>
-                                {/* Shimmer */}
-                                <div style={{
-                                  position: 'absolute',
-                                  top: 0,
-                                  left: '-100%',
-                                  width: '100%',
-                                  height: '100%',
-                                  background: 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent)',
-                                  animation: 'shimmer 2s infinite'
-                                }}></div>
-                              </div>
-                            </div>
-                            {/* Time Text */}
-                            <div style={{
-                              display: 'flex',
-                              justifyContent: 'space-between',
-                              alignItems: 'center'
-                            }}>
-                              <span style={{
-                                fontSize: '0.6875rem',
-                                color: 'rgba(255, 255, 255, 0.75)',
-                                fontWeight: 500,
-                                textTransform: 'uppercase',
-                                letterSpacing: '0.03em'
-                              }}>
-                                {colorScheme.status}
-                              </span>
-                              <span style={{
-                                fontSize: '0.75rem',
-                                color: 'rgba(255, 255, 255, 0.95)',
-                                fontWeight: 700,
-                                fontFamily: 'monospace',
-                                letterSpacing: '0.02em'
-                              }}>
-                                {formatTimeRemaining(timeRemaining)}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })()}
-                  </div>
-                  <button
-                    onClick={copyEmail}
-                    title={copied ? "Copied!" : "Copy to clipboard"}
-                    style={{
-                      padding: '12px 16px',
-                      background: copied ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.25)',
-                      backdropFilter: 'blur(10px)',
-                      color: 'white',
-                      border: copied ? '2px solid rgba(16, 185, 129, 0.5)' : '2px solid rgba(255, 255, 255, 0.4)',
-                      borderRadius: '12px',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      fontWeight: 600,
-                      fontSize: '0.8125rem',
-                      whiteSpace: 'nowrap',
-                      flexShrink: 0,
-                      fontFamily: theme.typography.fontFamily.primary,
-                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                      boxShadow: copied ? '0 4px 12px rgba(16, 185, 129, 0.25)' : '0 4px 12px rgba(0, 0, 0, 0.15)',
-                      position: 'relative',
-                      overflow: 'hidden'
-                    }}
-                  onMouseEnter={(e) => {
-                    if (!copied) {
-                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.35)';
-                      e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.6)';
-                      e.currentTarget.style.transform = 'translateY(-2px) scale(1.05)';
-                      e.currentTarget.style.boxShadow = '0 6px 20px rgba(0, 0, 0, 0.2)';
-                    }
-                  }}
-                    onMouseLeave={(e) => {
-                      if (!copied) {
-                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.25)';
-                        e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.4)';
-                        e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
-                      }
-                    }}
-                    onMouseDown={(e) => {
-                      e.currentTarget.style.transform = 'translateY(0) scale(0.95)';
-                    }}
-                    onMouseUp={(e) => {
-                      e.currentTarget.style.transform = copied ? 'translateY(0) scale(1)' : 'translateY(-2px) scale(1.05)';
-                    }}
-                  >
-                    {copied ? (
-                      <>
-                        <Check size={16} strokeWidth={2.5} />
-                        <span>Copied</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy size={16} strokeWidth={2} />
-                        <span>Copy</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-            </div>
-          </div>
-
-          {/* Ad Container - Banner Ad */}
-          <div style={{
-            maxWidth: '900px',
-            width: '100%',
-            margin: '0 auto 32px',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            minHeight: '100px',
-            background: theme.colors.background.sky,
-            borderRadius: theme.borderRadius['2xl'],
-            padding: theme.spacing.lg,
-            border: '1px solid rgba(14, 165, 233, 0.15)',
-            boxShadow: theme.shadows.sm
-          }}>
-            <div id="container-b1295c45d307f3c8f0be77f72ef3e22d"></div>
-          </div>
-
-          {/* Features */}
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-              gap: '16px',
+              maxWidth: '900px',
+              width: '100%',
+              margin: '0 auto',
               marginTop: '24px'
             }}>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                gap: '16px'
+              }}>
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -1410,6 +1047,7 @@ export default function Home() {
                   }}>No Registration</p>
                 </div>
               </div>
+              </div>
             </div>
 
             {error && (
@@ -1423,10 +1061,10 @@ export default function Home() {
                 fontSize: '0.875rem',
                 fontWeight: 500
               }}>
-                {error}
+                {typeof error === 'string' ? error : 'An error occurred. Please try again.'}
               </div>
             )}
-          </div>
+          </>
         )}
 
         {/* Email Inbox */}
@@ -1581,40 +1219,9 @@ export default function Home() {
           </div>
         )}
 
-        {/* Modern Footer */}
-        <div style={{
-          textAlign: 'center',
-          marginTop: '80px',
-          marginBottom: '40px'
-        }}>
-          <div style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '14px 28px',
-            background: 'rgba(255, 255, 255, 0.9)',
-            backdropFilter: 'blur(20px)',
-            borderRadius: '16px',
-            border: '1px solid rgba(255, 255, 255, 0.8)',
-            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.08)'
-          }}>
-            <p style={{
-              fontSize: '0.875rem',
-              color: '#4a5568',
-              margin: 0,
-              fontWeight: 400
-            }}>
-              © 2024 <span style={{
-                fontWeight: theme.typography.fontWeight.semibold,
-                backgroundImage: theme.gradients.primaryText,
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text'
-              }}>CursurPro TempMail</span>. All rights reserved.
-            </p>
-          </div>
-        </div>
       </div>
+
+      <Footer />
 
       <style dangerouslySetInnerHTML={{__html: `
         @keyframes spin {
@@ -1673,5 +1280,6 @@ export default function Home() {
         }
       `}} />
     </div>
+    </>
   );
 }
