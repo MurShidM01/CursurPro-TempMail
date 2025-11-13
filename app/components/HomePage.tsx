@@ -5,6 +5,7 @@ import { Mail, Shield, Zap, Clock, Users, TrendingUp, Globe, CheckCircle, ArrowR
 import { theme } from '../theme';
 import Link from 'next/link';
 import Footer from './Footer';
+import GoogleAdsense from './GoogleAdsense';
 
 interface Stats {
   emailsGenerated: number;
@@ -434,6 +435,15 @@ export default function HomePage({ onGetStarted }: { onGetStarted: () => void })
         </div>
       </section>
 
+      {/* AdSense Ad */}
+      <section style={{
+        padding: '20px',
+        maxWidth: '1200px',
+        margin: '40px auto',
+        textAlign: 'center'
+      }}>
+        <GoogleAdsense adSlot="1234567890" style={{ display: 'block', textAlign: 'center', height: '250px', width: '100%' }} />
+      </section>
 
       {/* About Section */}
       <section style={{
