@@ -7,7 +7,6 @@ import EmailInbox from './components/EmailInbox';
 import HomePage from './components/HomePage';
 import EmailDisplay from './components/EmailDisplay';
 import Footer from './components/Footer';
-import GoogleAdsense from './components/GoogleAdsense';
 import { theme } from './theme';
 import { loadStoredEmail, saveEmail, clearStoredEmail } from './utils/emailStorage';
 import { deleteCookie } from './utils/cookies';
@@ -1078,18 +1077,6 @@ export default function Home() {
             boxSizing: 'border-box'
           }}>
             <EmailInbox emailAddress={emailAddress} />
-          </div>
-        )}
-
-        {/* AdSense Ad */}
-        {emailAddress && (
-          <div style={{
-            maxWidth: '900px',
-            width: '100%',
-            margin: '40px auto',
-            textAlign: 'center'
-          }}>
-            <GoogleAdsense adSlot="2345678901" style={{ display: 'block', textAlign: 'center', height: '250px', width: '100%' }} />
           </div>
         )}
 

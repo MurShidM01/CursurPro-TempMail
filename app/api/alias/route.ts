@@ -5,20 +5,32 @@ import { deleteOldAliases } from '../cleanup/deleteOldAliases';
 import { getRandomExistingAlias } from './getRandomExisting';
 
 async function getGmailEmail(): Promise<string> {
-  const oauth2Client = new google.auth.OAuth2(
-    process.env.GMAIL_CLIENT_ID,
-    process.env.GMAIL_CLIENT_SECRET,
-    process.env.GMAIL_REDIRECT_URI
-  );
+  // Option 1: Use static forwarding email from environment variable
+  const staticEmail = process.env.FORWARD_EMAIL;
+  if (staticEmail) {
+    return staticEmail;
+  }
 
-  oauth2Client.setCredentials({
-    refresh_token: process.env.GMAIL_REFRESH_TOKEN,
-  });
+  // Option 2: Try OAuth (original method)
+  try {
+    const oauth2Client = new google.auth.OAuth2(
+      process.env.GMAIL_CLIENT_ID,
+      process.env.GMAIL_CLIENT_SECRET,
+      process.env.GMAIL_REDIRECT_URI
+    );
 
-  const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
-  const profile = await gmail.users.getProfile({ userId: 'me' });
-  
-  return profile.data.emailAddress || '';
+    oauth2Client.setCredentials({
+      refresh_token: process.env.GMAIL_REFRESH_TOKEN,
+    });
+
+    const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+    const profile = await gmail.users.getProfile({ userId: 'me' });
+    
+    return profile.data.emailAddress || '';
+  } catch (error) {
+    console.error('Gmail OAuth error:', error);
+    throw new Error('Gmail OAuth token expired or invalid. Please set FORWARD_EMAIL in .env or regenerate GMAIL_REFRESH_TOKEN');
+  }
 }
 
 export async function POST(request: Request) {

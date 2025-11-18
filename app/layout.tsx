@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
 import "./globals.css";
+import ServiceWorkerRegistration from "./components/ServiceWorkerRegistration";
 
 const poppins = Poppins({
   weight: ['300', '400', '500', '600', '700', '800'],
@@ -23,7 +24,7 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5115994834150891" crossOrigin="anonymous"></script>
+        <script src="https://fpyf8.com/88/tag.min.js" data-zone="186400" async data-cfasync="false"></script>
       </head>
       <body
         style={{
@@ -35,6 +36,7 @@ export default function RootLayout({
           fontWeight: 400
         }}
       >
+        <ServiceWorkerRegistration />
         {children}
       </body>
     </html>

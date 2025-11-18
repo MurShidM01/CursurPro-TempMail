@@ -1,7 +1,3 @@
 User-agent: *
 Allow: /
 Sitemap: https://cursurpro.site/sitemap.xml
-
-# Allow Googlebot to access ads.txt
-User-agent: Googlebot
-Allow: /ads.txt
