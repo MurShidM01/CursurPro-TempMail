@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { Mail, RefreshCw, Clock, User, X, Inbox, Copy, Check, ExternalLink, Key, Link2, FileText, Code } from 'lucide-react';
+import { Mail, RefreshCw, Clock, User, X, Inbox, Copy, Check, ExternalLink, Key, Link2 } from 'lucide-react';
 import { theme } from '../theme';
 
 interface Email {
@@ -11,6 +11,9 @@ interface Email {
   date: string;
   snippet: string;
   body: string;
+  hasFullContent?: boolean;
+  senderEmail?: string;
+  senderName?: string;
   isSpam?: boolean;
   deliveredTo?: string;
   originalTo?: string;
@@ -28,7 +31,6 @@ export default function EmailInbox({ emailAddress }: EmailInboxProps) {
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [copiedOTP, setCopiedOTP] = useState(false);
   const [copiedContent, setCopiedContent] = useState(false);
-  const [viewMode, setViewMode] = useState<'formatted' | 'raw'>('formatted');
   const [currentTime, setCurrentTime] = useState(Date.now());
 
   const EMAIL_EXPIRY_TIME = 15 * 60 * 1000; // 15 minutes in milliseconds
@@ -183,7 +185,6 @@ export default function EmailInbox({ emailAddress }: EmailInboxProps) {
 
   const handleEmailClick = (email: Email) => {
     setSelectedEmail(email);
-    setViewMode('formatted');
     setCopiedOTP(false);
     setCopiedContent(false);
   };
@@ -1019,93 +1020,17 @@ export default function EmailInbox({ emailAddress }: EmailInboxProps) {
                 </div>
               )}
 
-              {/* View Mode Toggle */}
+              {/* Copy Button */}
               <div style={{
                 display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                marginBottom: '20px',
-                padding: '12px 16px',
-                background: 'white',
-                borderRadius: '12px',
-                border: '1px solid #e2e8f0',
-                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)'
+                justifyContent: 'flex-end',
+                marginBottom: '20px'
               }}>
-                <button
-                  onClick={() => setViewMode('formatted')}
-                  style={{
-                    flex: 1,
-                    padding: '10px 16px',
-                    borderRadius: '8px',
-                    border: 'none',
-                    background: viewMode === 'formatted' ? theme.gradients.primary : 'transparent',
-                    color: viewMode === 'formatted' ? 'white' : '#718096',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s ease',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px',
-                    fontWeight: 600,
-                    fontSize: '0.875rem',
-                    fontFamily: 'inherit'
-                  }}
-                  onMouseEnter={(e) => {
-                    if (viewMode !== 'formatted') {
-                      e.currentTarget.style.background = 'rgba(20, 184, 166, 0.1)';
-                      e.currentTarget.style.color = theme.colors.primary[500];
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (viewMode !== 'formatted') {
-                      e.currentTarget.style.background = 'transparent';
-                      e.currentTarget.style.color = '#718096';
-                    }
-                  }}
-                >
-                  <FileText size={16} />
-                  Formatted
-                </button>
-                <button
-                  onClick={() => setViewMode('raw')}
-                  style={{
-                    flex: 1,
-                    padding: '10px 16px',
-                    borderRadius: '8px',
-                    border: 'none',
-                    background: viewMode === 'raw' ? theme.gradients.primary : 'transparent',
-                    color: viewMode === 'raw' ? 'white' : '#718096',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s ease',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px',
-                    fontWeight: 600,
-                    fontSize: '0.875rem',
-                    fontFamily: 'inherit'
-                  }}
-                  onMouseEnter={(e) => {
-                    if (viewMode !== 'raw') {
-                      e.currentTarget.style.background = 'rgba(20, 184, 166, 0.1)';
-                      e.currentTarget.style.color = theme.colors.primary[500];
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (viewMode !== 'raw') {
-                      e.currentTarget.style.background = 'transparent';
-                      e.currentTarget.style.color = '#718096';
-                    }
-                  }}
-                >
-                  <Code size={16} />
-                  Raw Text
-                </button>
                 <button
                   onClick={copyEmailContent}
                   style={{
-                    padding: '10px 16px',
-                    borderRadius: '8px',
+                    padding: '10px 20px',
+                    borderRadius: '10px',
                     border: '1px solid #e2e8f0',
                     background: 'white',
                     color: theme.colors.primary[500],
@@ -1116,15 +1041,20 @@ export default function EmailInbox({ emailAddress }: EmailInboxProps) {
                     gap: '8px',
                     fontWeight: 600,
                     fontSize: '0.875rem',
-                    fontFamily: 'inherit'
+                    fontFamily: 'inherit',
+                    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)'
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.background = 'rgba(20, 184, 166, 0.05)';
                     e.currentTarget.style.borderColor = theme.colors.primary[500];
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.1)';
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.background = 'white';
                     e.currentTarget.style.borderColor = '#e2e8f0';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.05)';
                   }}
                 >
                   {copiedContent ? (
@@ -1135,7 +1065,7 @@ export default function EmailInbox({ emailAddress }: EmailInboxProps) {
                   ) : (
                     <>
                       <Copy size={16} />
-                      <span>Copy</span>
+                      <span>Copy Content</span>
                     </>
                   )}
                 </button>
@@ -1150,33 +1080,20 @@ export default function EmailInbox({ emailAddress }: EmailInboxProps) {
                 boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)',
                 minHeight: '200px'
               }}>
-                {viewMode === 'formatted' ? (
-                  <div
-                    style={{
-                      color: '#2d3748',
-                      lineHeight: 1.8,
-                      fontSize: '0.9375rem',
-                      wordBreak: 'break-word'
-                    }}
-                    dangerouslySetInnerHTML={{ 
-                      __html: selectedEmail.body.replace(
-                        /<a\s+href=["']([^"']+)["']/gi,
-                        `<a href="$1" target="_blank" rel="noopener noreferrer" style="color: ${theme.colors.primary[500]}; text-decoration: underline;"`
-                      )
-                    }}
-                  />
-                ) : (
-                  <pre style={{
+                <div
+                  style={{
                     color: '#2d3748',
                     lineHeight: 1.8,
-                    fontSize: '0.875rem',
-                    fontFamily: 'monospace',
-                    whiteSpace: 'pre-wrap',
-                    wordBreak: 'break-word',
-                    margin: 0,
-                    padding: 0
-                  }}>{emailData?.plainText || selectedEmail.body}</pre>
-                )}
+                    fontSize: '0.9375rem',
+                    wordBreak: 'break-word'
+                  }}
+                  dangerouslySetInnerHTML={{ 
+                    __html: selectedEmail.body.replace(
+                      /<a\s+href=["']([^"']+)["']/gi,
+                      `<a href="$1" target="_blank" rel="noopener noreferrer" style="color: ${theme.colors.primary[500]}; text-decoration: underline;"`
+                    )
+                  }}
+                />
               </div>
             </div>
           </div>

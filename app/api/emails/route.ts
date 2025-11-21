@@ -1,29 +1,43 @@
 import { NextResponse } from 'next/server';
-import axios from 'axios';
+import { google } from 'googleapis';
 
-interface ImprovMXLog {
+interface GmailMessage {
   id: string;
-  created: string;
-  subject: string;
-  sender: {
-    email: string;
-    name?: string;
-  };
-  recipient: {
-    email: string;
-    name?: string;
-  };
-  forward?: {
-    email: string;
-    name?: string;
-  } | null;
-  events: Array<{
-    status: string;
-    message: string;
-    code: number;
-  }>;
-  messageId?: string;
-  hostname?: string;
+  threadId: string;
+  labelIds?: string[];
+  snippet?: string;
+  payload?: any;
+  internalDate?: string;
+}
+
+// Helper function to extract body from Gmail message
+function extractBody(payload: any): string {
+  let body = '';
+
+  if (payload.body && payload.body.data) {
+    body = Buffer.from(payload.body.data, 'base64').toString('utf-8');
+  } else if (payload.parts) {
+    for (const part of payload.parts) {
+      if (part.mimeType === 'text/html' && part.body?.data) {
+        body = Buffer.from(part.body.data, 'base64').toString('utf-8');
+        break;
+      } else if (part.mimeType === 'text/plain' && part.body?.data && !body) {
+        body = Buffer.from(part.body.data, 'base64').toString('utf-8');
+      } else if (part.parts) {
+        // Recursive search for nested parts
+        for (const nestedPart of part.parts) {
+          if (nestedPart.mimeType === 'text/html' && nestedPart.body?.data) {
+            body = Buffer.from(nestedPart.body.data, 'base64').toString('utf-8');
+            break;
+          } else if (nestedPart.mimeType === 'text/plain' && nestedPart.body?.data && !body) {
+            body = Buffer.from(nestedPart.body.data, 'base64').toString('utf-8');
+          }
+        }
+      }
+    }
+  }
+
+  return body;
 }
 
 export async function GET(request: Request) {
@@ -38,133 +52,120 @@ export async function GET(request: Request) {
       );
     }
 
-    const apiKey = process.env.IMPROVMX_API_KEY;
-    
-    if (!apiKey) {
-      return NextResponse.json(
-        { error: 'IMPROVMX_API_KEY not configured' },
-        { status: 500 }
-      );
-    }
+    // Set up Gmail OAuth2 client
+    const oauth2Client = new google.auth.OAuth2(
+      process.env.GMAIL_CLIENT_ID,
+      process.env.GMAIL_CLIENT_SECRET,
+      process.env.GMAIL_REDIRECT_URI
+    );
 
-    // Extract alias and domain from email address
-    const [alias, domain] = emailAddress.split('@');
-    
-    if (!alias || !domain) {
-      return NextResponse.json(
-        { error: 'Invalid email address format' },
-        { status: 400 }
-      );
-    }
+    oauth2Client.setCredentials({
+      refresh_token: process.env.GMAIL_REFRESH_TOKEN,
+    });
 
-    const authHeader = {
-      'Authorization': `Basic ${Buffer.from(`api:${apiKey}`).toString('base64')}`,
-    };
+    const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
 
-    // Fetch logs for this specific alias from ImprovMX
-    try {
-      const logsResponse = await axios.get(
-        `https://api.improvmx.com/v3/domains/${domain}/logs/${alias}`,
-        { headers: authHeader }
-      );
+    // Search for emails sent to this specific address
+    const searchQueries = [
+      `to:${emailAddress}`,
+      `deliveredto:${emailAddress}`,
+      `in:anywhere ${emailAddress}`
+    ];
 
-      if (!logsResponse.data.success || !logsResponse.data.logs) {
-        return NextResponse.json({
-          emails: [],
-          count: 0
+    let allMessages: GmailMessage[] = [];
+
+    // Try each search query
+    for (const query of searchQueries) {
+      try {
+        const response = await gmail.users.messages.list({
+          userId: 'me',
+          q: query,
+          maxResults: 50,
         });
+
+        if (response.data.messages) {
+          allMessages = allMessages.concat(response.data.messages as GmailMessage[]);
+        }
+      } catch (err) {
+        console.log(`Query "${query}" failed:`, err);
+        continue;
       }
+    }
 
-      const logs: ImprovMXLog[] = logsResponse.data.logs;
+    // Remove duplicates based on message ID
+    const uniqueMessages = Array.from(
+      new Map(allMessages.map(msg => [msg.id, msg])).values()
+    );
 
-      // Transform ImprovMX logs into email format
-      const emails = await Promise.all(
-        logs.map(async (log) => {
-          let body = '';
-          let snippet = '';
+    // Fetch full details for each message
+    const emails = await Promise.all(
+      uniqueMessages.map(async (message) => {
+        try {
+          const fullMessage = await gmail.users.messages.get({
+            userId: 'me',
+            id: message.id,
+            format: 'full',
+          });
 
-          // Try to fetch the email content if available
-          // Note: ImprovMX only stores emails briefly or if logging is set to "Highest log data"
-          try {
-            const emailContentResponse = await axios.get(
-              `https://api.improvmx.com/v3/emails/${log.id}.json`,
-              { headers: authHeader }
-            );
-            
-            if (emailContentResponse.data) {
-              body = emailContentResponse.data.body || emailContentResponse.data.html || emailContentResponse.data.text || '';
-              snippet = body.replace(/<[^>]*>/g, '').substring(0, 150);
-            }
-          } catch (contentError) {
-            // Email content not available (common for delivered emails after a few seconds)
-            console.log(`Email content not available for ${log.id}`);
-            snippet = 'Email content not stored. Enable "Highest log data" in ImprovMX dashboard to store email content.';
-          }
+          const headers = fullMessage.data.payload?.headers || [];
+          const subject = headers.find((h: any) => h.name === 'Subject')?.value || '(No Subject)';
+          const from = headers.find((h: any) => h.name === 'From')?.value || 'Unknown';
+          const date = headers.find((h: any) => h.name === 'Date')?.value || fullMessage.data.internalDate;
+          const deliveredTo = headers.find((h: any) => h.name === 'Delivered-To')?.value || emailAddress;
+          const originalTo = headers.find((h: any) => h.name === 'X-Original-To')?.value || 
+                            headers.find((h: any) => h.name === 'To')?.value || emailAddress;
 
-          // Check if email was successfully delivered
-          const wasDelivered = log.events.some(event => 
-            event.status === 'DELIVERED' || event.status === 'QUEUED'
-          );
-          
-          const wasRefused = log.events.some(event => 
-            event.status === 'REFUSED' || event.status === 'REJECTED'
-          );
+          const body = extractBody(fullMessage.data.payload);
+          const snippet = fullMessage.data.snippet || body.replace(/<[^>]*>/g, '').substring(0, 150);
+
+          // Check if it's spam
+          const isSpam = fullMessage.data.labelIds?.includes('SPAM') || false;
 
           return {
-            id: log.id,
-            subject: log.subject || '(No Subject)',
-            from: log.sender.name 
-              ? `${log.sender.name} <${log.sender.email}>`
-              : log.sender.email,
-            date: log.created,
-            snippet: snippet || `Email from ${log.sender.email}`,
-            body: body || `<p>Email content not available. Please enable "Highest log data" logging in your ImprovMX dashboard to store email content.</p><p><strong>From:</strong> ${log.sender.email}</p><p><strong>Subject:</strong> ${log.subject}</p>`,
-            isSpam: wasRefused,
-            deliveredTo: log.recipient.email,
-            originalTo: log.recipient.email,
-            status: wasRefused ? 'refused' : wasDelivered ? 'delivered' : 'unknown',
+            id: message.id,
+            subject,
+            from,
+            date: date || new Date(parseInt(fullMessage.data.internalDate || '0')).toISOString(),
+            snippet,
+            body,
+            hasFullContent: !!body,
+            isSpam,
+            deliveredTo,
+            originalTo,
+            senderEmail: from.match(/<(.+?)>$/)?.[1] || from,
+            senderName: from.replace(/<.+?>$/, '').trim() || null,
           };
-        })
-      );
+        } catch (err) {
+          console.error(`Error fetching message ${message.id}:`, err);
+          return null;
+        }
+      })
+    );
 
-      // Filter out null results and sort by date (newest first)
-      const validEmails = emails
-        .filter((email) => email !== null)
-        .sort((a, b) => {
-          const dateA = new Date(a.date).getTime();
-          const dateB = new Date(b.date).getTime();
-          return dateB - dateA;
-        });
-
-      return NextResponse.json({ 
-        emails: validEmails, 
-        count: validEmails.length 
+    // Filter out null results and sort by date (newest first)
+    const validEmails = emails
+      .filter((email) => email !== null)
+      .sort((a, b) => {
+        const dateA = new Date(a.date).getTime();
+        const dateB = new Date(b.date).getTime();
+        return dateB - dateA;
       });
 
-    } catch (logsError: any) {
-      console.error('Error fetching logs from ImprovMX:', logsError);
-      
-      if (logsError.response?.status === 404) {
-        // No logs found for this alias
-        return NextResponse.json({
-          emails: [],
-          count: 0
-        });
-      }
-
-      throw logsError;
-    }
+    return NextResponse.json({ 
+      emails: validEmails, 
+      count: validEmails.length 
+    });
 
   } catch (error: any) {
-    console.error('Error fetching emails:', error);
+    console.error('Error fetching emails from Gmail:', error);
     
     return NextResponse.json(
       { 
-        error: error.response?.data?.error || error.message || 'Failed to fetch emails',
+        error: error.message || 'Failed to fetch emails from Gmail',
         emails: [],
         count: 0
       },
-      { status: error.response?.status || 500 }
+      { status: 500 }
     );
   }
 }
